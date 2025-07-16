@@ -19,7 +19,7 @@ exports.modules = {
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
-eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export */ __webpack_require__.d(__webpack_exports__, {\n/* harmony export */   POST: () => (/* binding */ POST),\n/* harmony export */   runtime: () => (/* binding */ runtime)\n/* harmony export */ });\n/* harmony import */ var next_server__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! next/server */ \"(rsc)/./node_modules/next/dist/api/server.js\");\n/* harmony import */ var form_data__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! form-data */ \"(rsc)/./node_modules/form-data/lib/form_data.js\");\n/* harmony import */ var form_data__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(form_data__WEBPACK_IMPORTED_MODULE_1__);\n\n\nconst runtime = \"nodejs\";\nasync function POST(req) {\n    try {\n        console.log(\"Received upload request\");\n        const formData = await req.formData();\n        const file = formData.get(\"file\");\n        if (!file) {\n            return next_server__WEBPACK_IMPORTED_MODULE_0__.NextResponse.json({\n                error: \"No file uploaded\"\n            }, {\n                status: 400\n            });\n        }\n        const bytes = await file.arrayBuffer();\n        const buffer = Buffer.from(bytes);\n        const proxyForm = new (form_data__WEBPACK_IMPORTED_MODULE_1___default())();\n        proxyForm.append(\"file\", buffer, {\n            filename: file.name,\n            contentType: file.type\n        });\n        const uploadRes = await fetch(\"http://backend:5000/upload\", {\n            method: \"POST\",\n            body: proxyForm,\n            headers: proxyForm.getHeaders()\n        });\n        if (!uploadRes.ok) {\n            return next_server__WEBPACK_IMPORTED_MODULE_0__.NextResponse.json({\n                message: \"Upload failed\"\n            }, {\n                status: 500\n            });\n        }\n        const data = await uploadRes.json();\n        return next_server__WEBPACK_IMPORTED_MODULE_0__.NextResponse.json({\n            message: \"Upload successful\",\n            data\n        });\n    } catch (error) {\n        console.error(\"Error uploading file:\", error);\n        return next_server__WEBPACK_IMPORTED_MODULE_0__.NextResponse.json({\n            error: \"Internal error\"\n        }, {\n            status: 500\n        });\n    }\n}\n//# sourceURL=[module]\n//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJmaWxlIjoiKHJzYykvLi9hcHAvYXBpL3VwbG9hZC9yb3V0ZS50cyIsIm1hcHBpbmdzIjoiOzs7Ozs7OztBQUF3RDtBQUN2QjtBQUUxQixNQUFNRSxVQUFVLFNBQVM7QUFFekIsZUFBZUMsS0FBS0MsR0FBZ0I7SUFDekMsSUFBSTtRQUNGQyxRQUFRQyxHQUFHLENBQUM7UUFDWixNQUFNQyxXQUFXLE1BQU1ILElBQUlHLFFBQVE7UUFDbkMsTUFBTUMsT0FBT0QsU0FBU0UsR0FBRyxDQUFDO1FBRTFCLElBQUksQ0FBQ0QsTUFBTTtZQUNULE9BQU9SLHFEQUFZQSxDQUFDVSxJQUFJLENBQUM7Z0JBQUVDLE9BQU87WUFBbUIsR0FBRztnQkFBRUMsUUFBUTtZQUFJO1FBQ3hFO1FBRUEsTUFBTUMsUUFBUSxNQUFNTCxLQUFLTSxXQUFXO1FBQ3BDLE1BQU1DLFNBQVNDLE9BQU9DLElBQUksQ0FBQ0o7UUFFM0IsTUFBTUssWUFBWSxJQUFJakIsa0RBQVFBO1FBRTlCaUIsVUFBVUMsTUFBTSxDQUFDLFFBQVFKLFFBQVE7WUFDL0JLLFVBQVVaLEtBQUthLElBQUk7WUFDbkJDLGFBQWFkLEtBQUtlLElBQUk7UUFDeEI7UUFDQSxNQUFNQyxZQUFZLE1BQU1DLE1BQU0sOEJBQThCO1lBQzFEQyxRQUFRO1lBQ1JDLE1BQU1UO1lBQ05VLFNBQVNWLFVBQVVXLFVBQVU7UUFDL0I7UUFFQSxJQUFJLENBQUNMLFVBQVVNLEVBQUUsRUFBRTtZQUNqQixPQUFPOUIscURBQVlBLENBQUNVLElBQUksQ0FBQztnQkFBRXFCLFNBQVM7WUFBZ0IsR0FBRztnQkFBRW5CLFFBQVE7WUFBSTtRQUN2RTtRQUVBLE1BQU1vQixPQUFPLE1BQU1SLFVBQVVkLElBQUk7UUFDakMsT0FBT1YscURBQVlBLENBQUNVLElBQUksQ0FBQztZQUFFcUIsU0FBUztZQUFxQkM7UUFBSztJQUNoRSxFQUFFLE9BQU9yQixPQUFPO1FBQ2ROLFFBQVFNLEtBQUssQ0FBQyx5QkFBeUJBO1FBQ3ZDLE9BQU9YLHFEQUFZQSxDQUFDVSxJQUFJLENBQUM7WUFBRUMsT0FBTztRQUFpQixHQUFHO1lBQUVDLFFBQVE7UUFBSTtJQUN0RTtBQUNGIiwic291cmNlcyI6WyIvYXBwL2FwcC9hcGkvdXBsb2FkL3JvdXRlLnRzIl0sInNvdXJjZXNDb250ZW50IjpbImltcG9ydCB7IE5leHRSZXF1ZXN0LCBOZXh0UmVzcG9uc2UgfSBmcm9tIFwibmV4dC9zZXJ2ZXJcIjtcbmltcG9ydCBGb3JtRGF0YSBmcm9tIFwiZm9ybS1kYXRhXCI7XG5cbmV4cG9ydCBjb25zdCBydW50aW1lID0gXCJub2RlanNcIjtcblxuZXhwb3J0IGFzeW5jIGZ1bmN0aW9uIFBPU1QocmVxOiBOZXh0UmVxdWVzdCkge1xuICB0cnkge1xuICAgIGNvbnNvbGUubG9nKFwiUmVjZWl2ZWQgdXBsb2FkIHJlcXVlc3RcIik7XG4gICAgY29uc3QgZm9ybURhdGEgPSBhd2FpdCByZXEuZm9ybURhdGEoKTtcbiAgICBjb25zdCBmaWxlID0gZm9ybURhdGEuZ2V0KFwiZmlsZVwiKSBhcyBGaWxlO1xuXG4gICAgaWYgKCFmaWxlKSB7XG4gICAgICByZXR1cm4gTmV4dFJlc3BvbnNlLmpzb24oeyBlcnJvcjogXCJObyBmaWxlIHVwbG9hZGVkXCIgfSwgeyBzdGF0dXM6IDQwMCB9KTtcbiAgICB9XG5cbiAgICBjb25zdCBieXRlcyA9IGF3YWl0IGZpbGUuYXJyYXlCdWZmZXIoKTtcbiAgICBjb25zdCBidWZmZXIgPSBCdWZmZXIuZnJvbShieXRlcyk7XG5cbiAgICBjb25zdCBwcm94eUZvcm0gPSBuZXcgRm9ybURhdGEoKTtcblxuICAgIHByb3h5Rm9ybS5hcHBlbmQoXCJmaWxlXCIsIGJ1ZmZlciwge1xuICAgICAgZmlsZW5hbWU6IGZpbGUubmFtZSxcbiAgICAgIGNvbnRlbnRUeXBlOiBmaWxlLnR5cGUsIC8vIFRoaXMgc2hvdWxkIGJlIFwiYXBwbGljYXRpb24vcGRmXCIgZm9yIFBERnNcbiAgICB9KTtcbiAgICBjb25zdCB1cGxvYWRSZXMgPSBhd2FpdCBmZXRjaChcImh0dHA6Ly9iYWNrZW5kOjUwMDAvdXBsb2FkXCIsIHtcbiAgICAgIG1ldGhvZDogXCJQT1NUXCIsXG4gICAgICBib2R5OiBwcm94eUZvcm0gYXMgYW55LFxuICAgICAgaGVhZGVyczogcHJveHlGb3JtLmdldEhlYWRlcnMoKSxcbiAgICB9KTtcblxuICAgIGlmICghdXBsb2FkUmVzLm9rKSB7XG4gICAgICByZXR1cm4gTmV4dFJlc3BvbnNlLmpzb24oeyBtZXNzYWdlOiBcIlVwbG9hZCBmYWlsZWRcIiB9LCB7IHN0YXR1czogNTAwIH0pO1xuICAgIH1cblxuICAgIGNvbnN0IGRhdGEgPSBhd2FpdCB1cGxvYWRSZXMuanNvbigpO1xuICAgIHJldHVybiBOZXh0UmVzcG9uc2UuanNvbih7IG1lc3NhZ2U6IFwiVXBsb2FkIHN1Y2Nlc3NmdWxcIiwgZGF0YSB9KTtcbiAgfSBjYXRjaCAoZXJyb3IpIHtcbiAgICBjb25zb2xlLmVycm9yKFwiRXJyb3IgdXBsb2FkaW5nIGZpbGU6XCIsIGVycm9yKTtcbiAgICByZXR1cm4gTmV4dFJlc3BvbnNlLmpzb24oeyBlcnJvcjogXCJJbnRlcm5hbCBlcnJvclwiIH0sIHsgc3RhdHVzOiA1MDAgfSk7XG4gIH1cbn1cbiJdLCJuYW1lcyI6WyJOZXh0UmVzcG9uc2UiLCJGb3JtRGF0YSIsInJ1bnRpbWUiLCJQT1NUIiwicmVxIiwiY29uc29sZSIsImxvZyIsImZvcm1EYXRhIiwiZmlsZSIsImdldCIsImpzb24iLCJlcnJvciIsInN0YXR1cyIsImJ5dGVzIiwiYXJyYXlCdWZmZXIiLCJidWZmZXIiLCJCdWZmZXIiLCJmcm9tIiwicHJveHlGb3JtIiwiYXBwZW5kIiwiZmlsZW5hbWUiLCJuYW1lIiwiY29udGVudFR5cGUiLCJ0eXBlIiwidXBsb2FkUmVzIiwiZmV0Y2giLCJtZXRob2QiLCJib2R5IiwiaGVhZGVycyIsImdldEhlYWRlcnMiLCJvayIsIm1lc3NhZ2UiLCJkYXRhIl0sImlnbm9yZUxpc3QiOltdLCJzb3VyY2VSb290IjoiIn0=\n//# sourceURL=webpack-internal:///(rsc)/./app/api/upload/route.ts\n");
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export */ __webpack_require__.d(__webpack_exports__, {\n/* harmony export */   POST: () => (/* binding */ POST),\n/* harmony export */   runtime: () => (/* binding */ runtime)\n/* harmony export */ });\n/* harmony import */ var next_server__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! next/server */ \"(rsc)/./node_modules/next/dist/api/server.js\");\n\n//import FormData from \"form-data\";\nconst runtime = \"nodejs\";\nasync function POST(req) {\n    try {\n        console.log(\"Received upload request\");\n        const formData = await req.formData();\n        const file = formData.get(\"file\");\n        if (!file) {\n            console.error(\"No file found in the request\");\n            return next_server__WEBPACK_IMPORTED_MODULE_0__.NextResponse.json({\n                error: \"No file uploaded\"\n            }, {\n                status: 400\n            });\n        }\n        console.log(\"formData\", formData);\n        const uploadRes = await fetch(\"http://backend:5000/upload\", {\n            method: \"POST\",\n            body: formData\n        });\n        if (!uploadRes.ok) {\n            return next_server__WEBPACK_IMPORTED_MODULE_0__.NextResponse.json({\n                message: \"Upload failed\"\n            }, {\n                status: 500\n            });\n        }\n        const data = await uploadRes.json();\n        return next_server__WEBPACK_IMPORTED_MODULE_0__.NextResponse.json({\n            message: \"Upload successful\",\n            data\n        });\n    } catch (error) {\n        console.error(\"Error uploading file:\", error);\n        return next_server__WEBPACK_IMPORTED_MODULE_0__.NextResponse.json({\n            error: \"Internal error\"\n        }, {\n            status: 500\n        });\n    }\n}\n//# sourceURL=[module]\n//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJmaWxlIjoiKHJzYykvLi9hcHAvYXBpL3VwbG9hZC9yb3V0ZS50cyIsIm1hcHBpbmdzIjoiOzs7Ozs7QUFBd0Q7QUFDeEQsbUNBQW1DO0FBRTVCLE1BQU1DLFVBQVUsU0FBUztBQUV6QixlQUFlQyxLQUFLQyxHQUFnQjtJQUN6QyxJQUFJO1FBQ0ZDLFFBQVFDLEdBQUcsQ0FBQztRQUNaLE1BQU1DLFdBQVcsTUFBTUgsSUFBSUcsUUFBUTtRQUNuQyxNQUFNQyxPQUFPRCxTQUFTRSxHQUFHLENBQUM7UUFFMUIsSUFBSSxDQUFDRCxNQUFNO1lBQ1RILFFBQVFLLEtBQUssQ0FBQztZQUNkLE9BQU9ULHFEQUFZQSxDQUFDVSxJQUFJLENBQUM7Z0JBQUVELE9BQU87WUFBbUIsR0FBRztnQkFBRUUsUUFBUTtZQUFJO1FBQ3hFO1FBRUFQLFFBQVFDLEdBQUcsQ0FBQyxZQUFZQztRQUV4QixNQUFNTSxZQUFZLE1BQU1DLE1BQU0sOEJBQThCO1lBQzFEQyxRQUFRO1lBQ1JDLE1BQU1UO1FBQ1I7UUFFQSxJQUFJLENBQUNNLFVBQVVJLEVBQUUsRUFBRTtZQUNqQixPQUFPaEIscURBQVlBLENBQUNVLElBQUksQ0FBQztnQkFBRU8sU0FBUztZQUFnQixHQUFHO2dCQUFFTixRQUFRO1lBQUk7UUFDdkU7UUFFQSxNQUFNTyxPQUFPLE1BQU1OLFVBQVVGLElBQUk7UUFDakMsT0FBT1YscURBQVlBLENBQUNVLElBQUksQ0FBQztZQUFFTyxTQUFTO1lBQXFCQztRQUFLO0lBQ2hFLEVBQUUsT0FBT1QsT0FBTztRQUNkTCxRQUFRSyxLQUFLLENBQUMseUJBQXlCQTtRQUN2QyxPQUFPVCxxREFBWUEsQ0FBQ1UsSUFBSSxDQUFDO1lBQUVELE9BQU87UUFBaUIsR0FBRztZQUFFRSxRQUFRO1FBQUk7SUFDdEU7QUFDRiIsInNvdXJjZXMiOlsiL2FwcC9hcHAvYXBpL3VwbG9hZC9yb3V0ZS50cyJdLCJzb3VyY2VzQ29udGVudCI6WyJpbXBvcnQgeyBOZXh0UmVxdWVzdCwgTmV4dFJlc3BvbnNlIH0gZnJvbSBcIm5leHQvc2VydmVyXCI7XG4vL2ltcG9ydCBGb3JtRGF0YSBmcm9tIFwiZm9ybS1kYXRhXCI7XG5cbmV4cG9ydCBjb25zdCBydW50aW1lID0gXCJub2RlanNcIjtcblxuZXhwb3J0IGFzeW5jIGZ1bmN0aW9uIFBPU1QocmVxOiBOZXh0UmVxdWVzdCkge1xuICB0cnkge1xuICAgIGNvbnNvbGUubG9nKFwiUmVjZWl2ZWQgdXBsb2FkIHJlcXVlc3RcIik7XG4gICAgY29uc3QgZm9ybURhdGEgPSBhd2FpdCByZXEuZm9ybURhdGEoKTtcbiAgICBjb25zdCBmaWxlID0gZm9ybURhdGEuZ2V0KFwiZmlsZVwiKSBhcyBGaWxlO1xuXG4gICAgaWYgKCFmaWxlKSB7XG4gICAgICBjb25zb2xlLmVycm9yKFwiTm8gZmlsZSBmb3VuZCBpbiB0aGUgcmVxdWVzdFwiKTtcbiAgICAgIHJldHVybiBOZXh0UmVzcG9uc2UuanNvbih7IGVycm9yOiBcIk5vIGZpbGUgdXBsb2FkZWRcIiB9LCB7IHN0YXR1czogNDAwIH0pO1xuICAgIH1cblxuICAgIGNvbnNvbGUubG9nKFwiZm9ybURhdGFcIiwgZm9ybURhdGEpO1xuXG4gICAgY29uc3QgdXBsb2FkUmVzID0gYXdhaXQgZmV0Y2goXCJodHRwOi8vYmFja2VuZDo1MDAwL3VwbG9hZFwiLCB7XG4gICAgICBtZXRob2Q6IFwiUE9TVFwiLFxuICAgICAgYm9keTogZm9ybURhdGEsXG4gICAgfSk7XG5cbiAgICBpZiAoIXVwbG9hZFJlcy5vaykge1xuICAgICAgcmV0dXJuIE5leHRSZXNwb25zZS5qc29uKHsgbWVzc2FnZTogXCJVcGxvYWQgZmFpbGVkXCIgfSwgeyBzdGF0dXM6IDUwMCB9KTtcbiAgICB9XG5cbiAgICBjb25zdCBkYXRhID0gYXdhaXQgdXBsb2FkUmVzLmpzb24oKTtcbiAgICByZXR1cm4gTmV4dFJlc3BvbnNlLmpzb24oeyBtZXNzYWdlOiBcIlVwbG9hZCBzdWNjZXNzZnVsXCIsIGRhdGEgfSk7XG4gIH0gY2F0Y2ggKGVycm9yKSB7XG4gICAgY29uc29sZS5lcnJvcihcIkVycm9yIHVwbG9hZGluZyBmaWxlOlwiLCBlcnJvcik7XG4gICAgcmV0dXJuIE5leHRSZXNwb25zZS5qc29uKHsgZXJyb3I6IFwiSW50ZXJuYWwgZXJyb3JcIiB9LCB7IHN0YXR1czogNTAwIH0pO1xuICB9XG59XG4iXSwibmFtZXMiOlsiTmV4dFJlc3BvbnNlIiwicnVudGltZSIsIlBPU1QiLCJyZXEiLCJjb25zb2xlIiwibG9nIiwiZm9ybURhdGEiLCJmaWxlIiwiZ2V0IiwiZXJyb3IiLCJqc29uIiwic3RhdHVzIiwidXBsb2FkUmVzIiwiZmV0Y2giLCJtZXRob2QiLCJib2R5Iiwib2siLCJtZXNzYWdlIiwiZGF0YSJdLCJpZ25vcmVMaXN0IjpbXSwic291cmNlUm9vdCI6IiJ9\n//# sourceURL=webpack-internal:///(rsc)/./app/api/upload/route.ts\n");
 
 /***/ }),
 
@@ -65,7 +65,7 @@ module.exports = require("next/dist/server/app-render/after-task-async-storage.e
 
 /***/ }),
 
-/***/ "./work-async-storage.external":
+/***/ "../app-render/work-async-storage.external":
 /*!*****************************************************************************!*\
   !*** external "next/dist/server/app-render/work-async-storage.external.js" ***!
   \*****************************************************************************/
@@ -84,39 +84,6 @@ module.exports = require("next/dist/server/app-render/work-async-storage.externa
 
 "use strict";
 module.exports = require("next/dist/server/app-render/work-unit-async-storage.external.js");
-
-/***/ }),
-
-/***/ "fs":
-/*!*********************!*\
-  !*** external "fs" ***!
-  \*********************/
-/***/ ((module) => {
-
-"use strict";
-module.exports = require("fs");
-
-/***/ }),
-
-/***/ "http":
-/*!***********************!*\
-  !*** external "http" ***!
-  \***********************/
-/***/ ((module) => {
-
-"use strict";
-module.exports = require("http");
-
-/***/ }),
-
-/***/ "https":
-/*!************************!*\
-  !*** external "https" ***!
-  \************************/
-/***/ ((module) => {
-
-"use strict";
-module.exports = require("https");
 
 /***/ }),
 
@@ -162,50 +129,6 @@ module.exports = require("next/dist/shared/lib/no-fallback-error.external");
 "use strict";
 module.exports = require("next/dist/shared/lib/router/utils/app-paths");
 
-/***/ }),
-
-/***/ "path":
-/*!***********************!*\
-  !*** external "path" ***!
-  \***********************/
-/***/ ((module) => {
-
-"use strict";
-module.exports = require("path");
-
-/***/ }),
-
-/***/ "stream":
-/*!*************************!*\
-  !*** external "stream" ***!
-  \*************************/
-/***/ ((module) => {
-
-"use strict";
-module.exports = require("stream");
-
-/***/ }),
-
-/***/ "url":
-/*!**********************!*\
-  !*** external "url" ***!
-  \**********************/
-/***/ ((module) => {
-
-"use strict";
-module.exports = require("url");
-
-/***/ }),
-
-/***/ "util":
-/*!***********************!*\
-  !*** external "util" ***!
-  \***********************/
-/***/ ((module) => {
-
-"use strict";
-module.exports = require("util");
-
 /***/ })
 
 };
@@ -215,7 +138,7 @@ module.exports = require("util");
 var __webpack_require__ = require("../../../webpack-runtime.js");
 __webpack_require__.C(exports);
 var __webpack_exec__ = (moduleId) => (__webpack_require__(__webpack_require__.s = moduleId))
-var __webpack_exports__ = __webpack_require__.X(0, ["vendor-chunks/next","vendor-chunks/asynckit","vendor-chunks/math-intrinsics","vendor-chunks/es-errors","vendor-chunks/call-bind-apply-helpers","vendor-chunks/get-proto","vendor-chunks/mime-db","vendor-chunks/has-symbols","vendor-chunks/gopd","vendor-chunks/function-bind","vendor-chunks/form-data","vendor-chunks/mime-types","vendor-chunks/hasown","vendor-chunks/has-tostringtag","vendor-chunks/get-intrinsic","vendor-chunks/es-set-tostringtag","vendor-chunks/es-object-atoms","vendor-chunks/es-define-property","vendor-chunks/dunder-proto","vendor-chunks/delayed-stream","vendor-chunks/combined-stream"], () => (__webpack_exec__("(rsc)/./node_modules/next/dist/build/webpack/loaders/next-app-loader/index.js?name=app%2Fapi%2Fupload%2Froute&page=%2Fapi%2Fupload%2Froute&appPaths=&pagePath=private-next-app-dir%2Fapi%2Fupload%2Froute.ts&appDir=%2Fapp%2Fapp&pageExtensions=tsx&pageExtensions=ts&pageExtensions=jsx&pageExtensions=js&rootDir=%2Fapp&isDev=true&tsconfigPath=tsconfig.json&basePath=&assetPrefix=&nextConfigOutput=&preferredRegion=&middlewareConfig=e30%3D&isGlobalNotFoundEnabled=!")));
+var __webpack_exports__ = __webpack_require__.X(0, ["vendor-chunks/next"], () => (__webpack_exec__("(rsc)/./node_modules/next/dist/build/webpack/loaders/next-app-loader/index.js?name=app%2Fapi%2Fupload%2Froute&page=%2Fapi%2Fupload%2Froute&appPaths=&pagePath=private-next-app-dir%2Fapi%2Fupload%2Froute.ts&appDir=%2Fapp%2Fapp&pageExtensions=tsx&pageExtensions=ts&pageExtensions=jsx&pageExtensions=js&rootDir=%2Fapp&isDev=true&tsconfigPath=tsconfig.json&basePath=&assetPrefix=&nextConfigOutput=&preferredRegion=&middlewareConfig=e30%3D&isGlobalNotFoundEnabled=!")));
 module.exports = __webpack_exports__;
 
 })();

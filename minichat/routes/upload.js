@@ -15,25 +15,29 @@ const upload = multer({
       "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
       "text/plain",
     ];
-    if (allowed.includes(file.mimetype)) cb(null, true);
-    else cb(new Error("Only PDF, DOCX, or TXT files allowed"));
+    if (allowed.includes(file.mimetype)) {
+      cb(null, true);
+    } else cb(new Error("Only PDF, DOCX, or TXT files allowed"));
   },
   limits: { fileSize: 10 * 1024 * 1024 },
 });
 
+//const upload = multer({ dest: "uploads/" });
+
 router.post("/", upload.single("file"), (req, res) => {
+  console.log("File upload request received");
+  console.log("File uploaded:", req.file, JSON.stringify(req.file, null, 2));
   if (!req.file) {
     return res.status(400).json({ error: "No file uploaded" });
   }
 
-  console.log("File uploaded:", req.file);
+  console.log("File uploaded:", req.file, JSON.stringify(req.file, null, 2));
   const docId = uuidv4();
   const ext = path.extname(req.file.originalname);
   const newPath = path.join("uploads", `${docId}${ext}`);
   fs.renameSync(req.file.path, newPath);
 
   // TODO: Extract facts here and store them with docId
-
   res.json({ docId });
 });
 

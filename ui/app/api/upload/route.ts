@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import FormData from "form-data";
+//import FormData from "form-data";
 
 export const runtime = "nodejs";
 
@@ -10,22 +10,15 @@ export async function POST(req: NextRequest) {
     const file = formData.get("file") as File;
 
     if (!file) {
+      console.error("No file found in the request");
       return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
     }
 
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
+    console.log("formData", formData);
 
-    const proxyForm = new FormData();
-
-    proxyForm.append("file", buffer, {
-      filename: file.name,
-      contentType: file.type, // This should be "application/pdf" for PDFs
-    });
     const uploadRes = await fetch("http://backend:5000/upload", {
       method: "POST",
-      body: proxyForm as any,
-      headers: proxyForm.getHeaders(),
+      body: formData,
     });
 
     if (!uploadRes.ok) {

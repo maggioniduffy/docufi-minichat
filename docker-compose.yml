@@ -9,6 +9,8 @@ services:
       - ./minichat/.env
     volumes:
       - ./minichat:/app
+    environment:
+      - NODE_ENV=development
     restart: unless-stopped
 
   frontend:

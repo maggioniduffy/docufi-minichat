@@ -30,8 +30,10 @@ export default function UploadForm() {
         method: "POST",
         body: formData,
       });
+      console.log("Response status:", res);
       if (!res.ok) throw new Error("Upload failed");
       const data = await res.json();
+      console.log("Upload response data:", data);
       setDocId(data.docId);
     } catch (err) {
       alert(
