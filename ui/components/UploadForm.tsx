@@ -16,12 +16,15 @@ export default function UploadForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    console.log("Submitting file:", file);
     if (!file) return;
 
     const formData = new FormData();
     formData.append("file", file);
     setLoading(true);
 
+    console.log("Submitting formData:", formData.get("file"));
     try {
       const res = await fetch("api/upload", {
         method: "POST",
@@ -31,7 +34,18 @@ export default function UploadForm() {
       const data = await res.json();
       setDocId(data.docId);
     } catch (err) {
-      alert("Upload error: " + (err as Error).message);
+      alert(
+        "Upload error: " +
+          (err as Error).message +
+          (err as Error).stack +
+          (err as Error).name
+      );
+      console.log(
+        "Upload error: " +
+          (err as Error).message +
+          (err as Error).stack +
+          (err as Error).name
+      );
     } finally {
       setLoading(false);
     }
