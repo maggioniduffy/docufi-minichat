@@ -1,0 +1,19 @@
+{
+  "name": "docufi-mini-chat",
+  "type": "module",
+  "version": "0.1.0",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.1",
+    "express": "^4.19.2",
+    "mammoth": "^1.4.30",
+    "multer": "^2.0.1",
+    "openai": "^4.30.0",
+    "pdf-parse": "^1.1.1",
+    "uuid": "^9.0.1"
+  }
+}
