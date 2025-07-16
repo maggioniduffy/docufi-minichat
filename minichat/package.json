@@ -8,12 +8,14 @@
     "dev": "nodemon server.js"
   },
   "dependencies": {
+    "better-sqlite3": "^12.2.0",
     "dotenv": "^16.4.1",
     "express": "^4.19.2",
     "mammoth": "^1.4.30",
     "multer": "^2.0.1",
     "openai": "^4.30.0",
     "pdf-parse": "^1.1.1",
+    "sqlite3": "^5.1.7",
     "uuid": "^9.0.1"
   },
   "devDependencies": {

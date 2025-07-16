@@ -3,6 +3,8 @@ import multer from "multer";
 import { v4 as uuidv4 } from "uuid";
 import path from "path";
 import fs from "fs";
+import crypto from "crypto";
+import db from "../db.js";
 
 const router = express.Router();
 
@@ -25,10 +27,19 @@ const upload = multer({
 //const upload = multer({ dest: "uploads/" });
 
 router.post("/", upload.single("file"), (req, res) => {
-  console.log("File upload request received");
-  console.log("File uploaded:", req.file, JSON.stringify(req.file, null, 2));
   if (!req.file) {
     return res.status(400).json({ error: "No file uploaded" });
+  }
+
+  const fileBuffer = fs.readFileSync(req.file.path);
+  const filehash = crypto.createHash("sha256").update(fileBuffer).digest("hex");
+
+  const existing = db
+    .prepare("SELECT id FROM documents WHERE filehash = ?")
+    .get(filehash);
+  if (existing) {
+    fs.unlinkSync(req.file.path); // Remove temp file
+    return res.json({ docId: existing.id });
   }
 
   console.log("File uploaded:", req.file, JSON.stringify(req.file, null, 2));
@@ -37,12 +48,16 @@ router.post("/", upload.single("file"), (req, res) => {
   const newPath = path.join("uploads", `${docId}${ext}`);
   fs.renameSync(req.file.path, newPath);
 
+  db.prepare(
+    "INSERT INTO documents (id, filename, facts) VALUES (?, ?, ?)"
+  ).run(docId, req.file.originalname, null);
+
   // TODO: Extract facts here and store them with docId
   res.json({ docId });
 });
 
 router.get("/", (req, res) => {
-  res.send("UPLOAD ENDPOIUNT");
+  res.send("UPLOAD ENDPOINT");
 });
 
 export default router;
