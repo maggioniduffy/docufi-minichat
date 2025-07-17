@@ -37,37 +37,47 @@ router.post("/", upload.single("file"), async (req, res) => {
     .prepare("SELECT id FROM documents WHERE filehash = ?")
     .get(filehash);
 
-  console.log("File existing:", existing);
-
   if (existing) {
     fs.unlinkSync(req.file.path);
-    console.log("File already exists in DB:", existing.id);
     return res.status(200).json({ docId: existing.id });
   }
 
   const docId = uuidv4();
   const ext = path.extname(req.file.originalname);
   const newPath = path.join("uploads", `${docId}${ext}`);
-  fs.renameSync(req.file.path, newPath);
 
-  db.prepare(
-    "INSERT INTO documents (id, filename, filehash, file) VALUES (?, ?, ?, ?)"
-  ).run(docId, req.file.originalname, filehash, fileBuffer);
+  // Transaction for document and facts
+  const uploadTx = db.transaction(
+    (docId, fileBuffer, filehash, filename, facts) => {
+      db.prepare(
+        "INSERT INTO documents (id, filename, filehash, file) VALUES (?, ?, ?, ?)"
+      ).run(docId, filename, filehash, fileBuffer);
 
-  const text = await extractText(newPath, req.file.mimetype);
-  console.log("Extracted text:", text);
-  const facts = await extractFactsWithLLM(text);
-
-  console.log("Extracted facts:", facts);
-
-  const insertFact = db.prepare(
-    "INSERT INTO facts (docId, key, value) VALUES (?, ?, ?)"
+      const insertFact = db.prepare(
+        "INSERT INTO facts (docId, key, value) VALUES (?, ?, ?)"
+      );
+      for (const fact of facts) {
+        insertFact.run(docId, fact.key, fact.value);
+      }
+    }
   );
-  for (const fact of facts) {
-    insertFact.run(docId, fact.key, fact.value);
-  }
 
-  return res.status(201).json({ docId });
+  try {
+    fs.renameSync(req.file.path, newPath);
+    const text = await extractText(newPath, req.file.mimetype);
+    const facts = await extractFactsWithLLM(text);
+
+    uploadTx(docId, fileBuffer, filehash, req.file.originalname, facts);
+
+    return res.status(201).json({ docId });
+  } catch (error) {
+    // Rollback is automatic if an error is thrown inside the transaction
+    console.error("Upload error:", error);
+    // Clean up file if it was renamed
+    if (fs.existsSync(newPath)) fs.unlinkSync(newPath);
+    else if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+    return res.status(500).json({ error: "Internal server error" });
+  }
 });
 
 router.get("/", (req, res) => {
