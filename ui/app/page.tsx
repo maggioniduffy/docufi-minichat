@@ -1,16 +1,20 @@
 import UploadForm from "@/components/UploadForm";
-import Image from "next/image";
+import Chat from "@/components/Chat";
 
 export default function Home() {
   return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center">
-        <h1 className="text-3xl sm:text-4xl font-bold text-gray-100 text-center">
-          {" "}
-          Docufi - <b> Minichat </b>
-        </h1>
-        <UploadForm />
-      </main>
+    <div className="h-screen bg-gray-50 flex flex-col items-center justify-center p-8">
+      <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-8 text-center">
+        Docufi - <b>Minichat</b>
+      </h1>
+      <div className="flex flex-col md:flex-row gap-8 w-full max-w-4xl h-full">
+        {/* Upload Form */}
+        <div className="md:w-1/3 w-full">
+          <UploadForm />
+        </div>
+        {/* Chat Section */}
+        <Chat />
+      </div>
     </div>
   );
 }

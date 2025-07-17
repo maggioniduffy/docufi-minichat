@@ -32,3 +32,21 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }
+
+export async function DELETE() {
+  try {
+    console.log("Deleting all facts");
+    const res = await fetch("http://backend:5000/upload/clear", {
+      method: "DELETE",
+    });
+
+    if (!res.ok) {
+      return NextResponse.json({ message: "Delete failed" }, { status: 500 });
+    }
+
+    return NextResponse.json({ message: "All documents deleted" });
+  } catch (error) {
+    console.error("Error deleting documents:", error);
+    return NextResponse.json({ error: "Internal error" }, { status: 500 });
+  }
+}

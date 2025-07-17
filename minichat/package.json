@@ -8,6 +8,9 @@
     "dev": "nodemon server.js"
   },
   "dependencies": {
+    "@langchain/core": "^0.3.64",
+    "@langchain/groq": "^0.2.3",
+    "@langchain/openai": "^0.6.1",
     "better-sqlite3": "^12.2.0",
     "dotenv": "^16.4.1",
     "express": "^4.19.2",
