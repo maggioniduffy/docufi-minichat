@@ -24,8 +24,6 @@ const upload = multer({
   limits: { fileSize: 10 * 1024 * 1024 },
 });
 
-//const upload = multer({ dest: "uploads/" });
-
 router.post("/", upload.single("file"), (req, res) => {
   if (!req.file) {
     return res.status(400).json({ error: "No file uploaded" });
@@ -37,20 +35,23 @@ router.post("/", upload.single("file"), (req, res) => {
   const existing = db
     .prepare("SELECT id FROM documents WHERE filehash = ?")
     .get(filehash);
+
   if (existing) {
     fs.unlinkSync(req.file.path); // Remove temp file
+    console.log("File already exists in DB:", existing.id);
     return res.json({ docId: existing.id });
   }
 
-  console.log("File uploaded:", req.file, JSON.stringify(req.file, null, 2));
   const docId = uuidv4();
   const ext = path.extname(req.file.originalname);
   const newPath = path.join("uploads", `${docId}${ext}`);
   fs.renameSync(req.file.path, newPath);
 
   db.prepare(
-    "INSERT INTO documents (id, filename, facts) VALUES (?, ?, ?)"
-  ).run(docId, req.file.originalname, null);
+    "INSERT INTO documents (id, filename, filehash, file) VALUES (?, ?, ?, ?)"
+  ).run(docId, req.file.originalname, filehash, fileBuffer);
+
+  fs.unlinkSync(req.file.path); // Remove temp file after saving to DB
 
   // TODO: Extract facts here and store them with docId
   res.json({ docId });

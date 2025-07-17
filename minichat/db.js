@@ -11,8 +11,16 @@ db.exec(`
     id TEXT PRIMARY KEY,
     filename TEXT,
     filehash TEXT UNIQUE,
-    facts TEXT,
+    file BLOB,
     uploaded_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+
+    CREATE TABLE IF NOT EXISTS facts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    docId TEXT,
+    key TEXT,
+    value TEXT,
+    FOREIGN KEY (docId) REFERENCES documents(id) ON DELETE CASCADE
   );
 `);
 
