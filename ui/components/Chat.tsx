@@ -4,20 +4,16 @@ import { useEffect, useRef, useState } from "react";
 import UploadForm from "./UploadForm";
 import DocumentSelector from "./SelectDocument";
 import { Document } from "../app/models";
+import ChatBox from "./ChatBox";
+import Outline from "./Outline";
 
-export default function ChatBox() {
+export default function Chat() {
   const [messages, setMessages] = useState<{ role: string; content: string }[]>(
     []
   );
   const [input, setInput] = useState("");
   const [doc, setSelectedDoc] = useState<Document | null>();
-  const chatEndRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    if (chatEndRef.current) {
-      chatEndRef.current.scrollIntoView({ behavior: "smooth" });
-    }
-  }, [messages]);
 
   const handleChat = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -66,39 +62,13 @@ export default function ChatBox() {
             <hr className="my-2" />
           </>
         )}
-        <div className="flex-1 overflow-y-auto mb-4 space-y-2">
-          {messages.map((msg, idx) => (
-            <div
-              key={idx}
-              className={`p-2 rounded ${
-                msg.role === "user"
-                  ? "bg-blue-100 text-blue-900 self-end"
-                  : "bg-gray-100 text-gray-700 self-start"
-              }`}
-            >
-              <b>{msg.role === "user" ? "You" : "Assistant"}:</b> {msg.content}
-            </div>
-          ))}
-
-          <div ref={chatEndRef} />
-        </div>
-        <form onSubmit={handleChat} className="flex gap-2 text-black">
-          <input
-            type="text"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            className="flex-1 border rounded px-3 py-2"
-            placeholder="Ask about your uploaded document..."
-            disabled={!doc?.id}
-          />
-          <button
-            type="submit"
-            className="bg-blue-600 text-white px-4 py-2 rounded disabled:opacity-50"
-            disabled={!doc?.id || !input.trim()}
-          >
-            Send
-          </button>
-        </form>
+        <ChatBox
+          input={input}
+          setInput={setInput}
+          onSubmit={handleChat}
+          docId={doc?.id}
+          messages={messages}
+        />
         {!doc?.id && (
           <div className="text-sm text-gray-400 mt-2">
             Upload a document to start chatting.
@@ -110,6 +80,7 @@ export default function ChatBox() {
           onSelect={setSelectedDoc}
           selectedId={doc?.id ?? ""}
         />
+        <Outline docId={doc?.id} />
         <UploadForm onUpload={setSelectedDoc} />
       </aside>
     </div>

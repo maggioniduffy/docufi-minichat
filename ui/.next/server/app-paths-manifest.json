@@ -1,6 +1,4 @@
 {
-  "/api/upload/route": "app/api/upload/route.js",
-  "/api/conversation/route": "app/api/conversation/route.js",
-  "/api/upload/status/route": "app/api/upload/status/route.js",
+  "/api/outline/route": "app/api/outline/route.js",
   "/page": "app/page.js"
 }
