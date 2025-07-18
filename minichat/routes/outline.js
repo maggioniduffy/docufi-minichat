@@ -1,5 +1,5 @@
 import express from "express";
-import { chatWithContext } from "../utils/llm.js";
+import { getOutline } from "../utils/llm.js";
 import db from "../db.js";
 
 const router = express.Router();
@@ -22,7 +22,7 @@ Output the outline as Markdown with headings and bullet points.
 `;
 
   try {
-    const outline = await chatWithContext(outlinePrompt, facts);
+    const outline = await getOutline(outlinePrompt, facts);
     res.json({ outline });
   } catch (err) {
     res.status(500).json({ error: "Failed to generate outline" });
