@@ -3,14 +3,49 @@ import fs from "fs";
 import pdfParse from "pdf-parse";
 import mammoth from "mammoth";
 import dotenv from "dotenv";
+// import Tesseract from "tesseract.js";
+// import path from "path";
+// import pdf from "pdf-poppler";
 
 dotenv.config();
 
 export async function extractText(filePath, mimetype) {
+  try {
+    console.log("Extracting text from file:", filePath, "MIME type:", mimetype);
   if (mimetype === "application/pdf") {
+    console.log("Processing PDF file:", filePath);
     const dataBuffer = fs.readFileSync(filePath);
     const data = await pdfParse(dataBuffer);
-    return data.text;
+    const text = data.text?.trim() || "";
+    // if (!text) {
+    //   console.log("No text found in PDF, attempting OCR...");
+    //   // Convert PDF to images (PNG)
+    //   const outputDir = "/tmp/pdf_images";
+    //   if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir);
+    //   const opts = {
+    //     format: "png",
+    //     out_dir: outputDir,
+    //     out_prefix: path.basename(filePath, path.extname(filePath)),
+    //     page: null,
+    //   };
+    //   await pdf.convert(filePath, opts);
+
+    //   // OCR each image and concatenate results
+    //   const images = fs
+    //     .readdirSync(outputDir)
+    //     .filter((f) => f.endsWith(".png"));
+    //   for (const img of images) {
+    //     const imgPath = path.join(outputDir, img);
+    //     const ocrResult = await Tesseract.recognize(imgPath, "eng");
+    //     text += "\n" + (ocrResult.data.text?.trim() || "");
+    //   }
+    //   if (!text.trim()) {
+    //     console.error("No text found in PDF or OCR result.");
+    //     return "";
+    //   }
+    //   console.log("OCR text extracted:", text);
+    // }
+    return text;
   }
 
   if (
@@ -24,8 +59,13 @@ export async function extractText(filePath, mimetype) {
   if (mimetype === "text/plain") {
     return fs.readFileSync(filePath, "utf8");
   }
+  } catch (error) {
+    console.error("Error extracting text:", error);
 
-  return "";
+    return "";
+  }
+  
+
 }
 
 export async function extractFactsWithLLM(text) {
@@ -66,6 +106,52 @@ Return the result as a JSON array: [ { "key": "...", "value": "..." }, ... ]`,
   }
 }
 
+function chunkText(text, chunkSize = 6000) {
+  const chunks = [];
+  let i = 0;
+  while (i < text.length) {
+    chunks.push(text.slice(i, i + chunkSize));
+    i += chunkSize;
+  }
+  return chunks;
+}
+
+// Extract facts from large text by chunking
+export async function extractFactsWithLLMChunked(text) {
+  console.log("Chunking text for fact extraction...");
+  const chunks = chunkText(text);
+  const uniqueFacts = [];
+  const seen = new Set();
+
+  for (const chunk of chunks) {
+    const facts = await extractFactsWithLLM(chunk);
+    let jsonStr = facts;
+    if (typeof facts === "string") {
+      const start = facts.indexOf("[");
+      const end = facts.lastIndexOf("]");
+      if (start !== -1 && end !== -1) {
+        jsonStr = facts.slice(start, end + 1);
+      }
+    }
+    try {
+      const parsed =
+        typeof jsonStr === "string" ? JSON.parse(jsonStr) : jsonStr;
+      if (Array.isArray(parsed)) {
+        for (const fact of parsed) {
+          const id = `${fact.key}|${fact.value}`;
+          if (!seen.has(id)) {
+            seen.add(id);
+            uniqueFacts.push(fact);
+          }
+        }
+      }
+    } catch (err) {
+      console.error("Chunk parse error:", err, facts);
+    }
+  }
+  return uniqueFacts;
+}
+
 export async function chatWithContext(userQuery, facts) {
   const model = new ChatGroq({
     apiKey: process.env.GROQ_API_KEY,
@@ -77,7 +163,14 @@ export async function chatWithContext(userQuery, facts) {
 
   User Question: ${userQuery}
 
-  Answer concisely and cite facts when applicable.`;
+  Answer concisely and cite facts when applicable.
+  
+  Chat with the user as if you were a financial analyst, providing clear and concise answers based on the facts provided. If the user asks for information not covered by the facts, politely inform them that you cannot provide that information.
+  
+  If no facts are relevant, say what you consider best based on your knowledge. Friendly chat.
+
+  Dont tell the source of the facts, just use them to answer the question.
+  `;
 
   const response = await model.invoke(prompt);
   return response.content;

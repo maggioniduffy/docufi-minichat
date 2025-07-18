@@ -1,15 +1,60 @@
 "use client";
 
-import { useState, useRef } from "react";
-import DocumentSelector from "./SelectDocument";
+import { Document } from "@/app/models";
+import { useState, useRef, useEffect } from "react";
 
-export default function UploadForm() {
+interface Props {
+  onUpload: (doc: Document | null) => void;
+}
+
+export default function UploadForm({ onUpload }: Props) {
   const [file, setFile] = useState<File | null>(null);
   const [docId, setDocId] = useState<string | null>(null);
+  const [filename, setFilename] = useState<string | null>(null);
+
   const [loading, setLoading] = useState(false);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const [processingDocs, setProcessingDocs] = useState<{ [docId: string]: boolean }>({});
+  const [readyDocs, setReadyDocs] = useState<{ [docId: string]: boolean }>({});
+  const [docFilenames, setDocFilenames] = useState<{ [docId: string]: string }>({});
+
+  const [existsMsg, setExistsMsg] = useState<string | null>(null);
+
+const pollStatus = (docId: string) => {
+  console.log("POLL");
+  setProcessingDocs((prev) => ({ ...prev, [docId]: true }));
+  setReadyDocs((prev) => ({ ...prev, [docId]: false }));
+
+  const interval = setInterval(async () => {
+    try {
+      console.log("Polling status for docId:", docId);
+      const res = await fetch(`/api/upload/status?docId=${docId}`);
+      const data = await res.json();
+      console.log("Polling response:", data);
+      if (data.ready) {
+        setProcessingDocs((prev) => ({ ...prev, [docId]: false }));
+        setReadyDocs((prev) => ({ ...prev, [docId]: true }));
+        clearInterval(interval); // <-- Add this line
+        onUpload({ id: docId, filename: docFilenames[docId] || "Unknown" });
+      }
+    } catch (err) {
+      console.error("Error polling status:", err);
+      setProcessingDocs((prev) => ({ ...prev, [docId]: false }));
+      setReadyDocs((prev) => ({ ...prev, [docId]: false }));
+      // clearInterval(interval);
+    }
+  }, 10000);
+};
+
+  useEffect(() => {
+    if (error) {
+      const timer = setTimeout(() => setError(null), 10000);
+      return () => clearTimeout(timer);
+    }
+  }, [error]);
 
   const handleFile = (f: File | undefined) => {
     if (!f) return;
@@ -26,36 +71,47 @@ export default function UploadForm() {
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  e.preventDefault();
+  setError(null);
+  if (!file) return;
+  const formData = new FormData();
+  formData.append("file", file);
+  setLoading(true);
 
-    setError(null); // Clear previous error
-    console.log("Submitting file:", file);
-    if (!file) return;
-
-    const formData = new FormData();
-    formData.append("file", file);
-    setLoading(true);
-
-    try {
-      const res = await fetch("api/upload", {
-        method: "POST",
-        body: formData,
-      });
-      if (!res.ok) throw new Error("Upload failed");
-      const data = await res.json();
-      setDocId(data.docId);
-    } catch (err) {
-      setError("Upload error: " + (err as Error).message);
-      console.log(
-        "Upload error: " +
-          (err as Error).message +
-          (err as Error).stack +
-          (err as Error).name
-      );
-    } finally {
+  try {
+    const res = await fetch("api/upload", {
+      method: "POST",
+      body: formData,
+    });
+    if (!res.ok) throw new Error("Upload failed");
+    const {data} = await res.json();
+    
+    if (data.status === "existing") {
+      setExistsMsg(`File "${data.filename}" already exists.`);
+      setFile(null);
+      if (inputRef.current) inputRef.current.value = "";
       setLoading(false);
+      return;
     }
-  };
+
+    console.log("Upload response:", data);
+    console.log("Upload response:", JSON.stringify(data, null, 2));
+    setDocId(data.docId);
+    setFilename(data.filename);
+    setDocFilenames((prev) => ({ ...prev, [data.docId]: data.filename })); // <-- add this
+    console.log("Document uploaded:", data.docId, data.filename);
+    pollStatus(data.docId);
+    setFile(null);
+    if (inputRef.current) {
+      inputRef.current.value = "";
+    }
+    setError(null);
+  } catch (err) {
+    setError("Upload error: " + (err as Error).message);
+  } finally {
+    setLoading(false);
+  }
+};
 
   const clear = async () => {
     try {
@@ -64,6 +120,13 @@ export default function UploadForm() {
       });
       if (!res.ok) throw new Error("Clear failed");
       const data = await res.json();
+      setDocId(null);
+      setFile(null);
+      setError(null);
+      // Show success message after clear
+      setTimeout(() => {
+        setError("✅ Cleared all uploaded documents.");
+      }, 100);
     } catch (err) {
       setError("Clear error: " + (err as Error).message);
       console.log(
@@ -74,7 +137,6 @@ export default function UploadForm() {
       );
     }
   };
-
   return (
     <div className="p-4 bg-gray-50 rounded-lg shadow-md space-y-4 flex flex-col items-center">
       <form onSubmit={handleSubmit} className="space-y-4 max-w-mdd">
@@ -128,18 +190,14 @@ export default function UploadForm() {
           )}
         </div>
 
-        {/* Success message */}
-        {docId && (
-          <div className="text-green-600 font-semibold mt-2">
-            ✅ Upload successful! Doc ID: {docId}
-          </div>
-        )}
-
         {error && (
-          <div className="text-red-600 font-semibold mt-2">{error}</div>
+          <div className="text-gray-600 font-semibold mt-2">{error}</div>
         )}
 
-        {/* Upload button */}
+        {existsMsg && (
+          <div className="text-yellow-700 font-semibold mt-2">{existsMsg}</div>
+        )}
+
         <button
           type="submit"
           disabled={!file || loading}
@@ -148,22 +206,30 @@ export default function UploadForm() {
           {loading ? "Uploading..." : "Upload"}
         </button>
 
-        {/* Output */}
-        {docId && (
-          <p className="text-green-600 font-mono break-all">
-            ✅ Uploaded! Doc ID: {docId}
+        {filename && (
+          <p className="text-yellow-600 font-mono break-all">
+            ✅ Uploaded! Filename: {filename} is in process
           </p>
         )}
+
+        <div className="mt-4 w-full">
+          {Object.keys(readyDocs).map((docId) =>
+            readyDocs[docId] ? (
+              <p key={docId} className="text-green-600 font-mono break-all">
+                ✅ Document ready: {docFilenames[docId] || docId}
+              </p>
+            ) : null
+          )}
+        </div>
       </form>
 
       <button
         onClick={clear}
-        className="text-black bg-gray-200 hover:bg-gray-300 font-semibold py-2 px-4 rounded-md transition-colors"
+        className="text-black bg-red-400 hover:bg-red-500 font-semibold py-2 px-4 rounded-md transition-colors"
       >
         {" "}
-        Clear{" "}
+        Clear entire table{" "}
       </button>
-      <DocumentSelector onSelect={() => {}} selectedId={"docId"} />
     </div>
   );
 }

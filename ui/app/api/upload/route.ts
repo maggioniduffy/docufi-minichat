@@ -26,6 +26,7 @@ export async function POST(req: NextRequest) {
     }
 
     const data = await uploadRes.json();
+    console.log("Upload successful:", data);
     return NextResponse.json({ message: "Upload successful", data });
   } catch (error) {
     console.error("Error uploading file:", error);
@@ -47,6 +48,28 @@ export async function DELETE() {
     return NextResponse.json({ message: "All documents deleted" });
   } catch (error) {
     console.error("Error deleting documents:", error);
+    return NextResponse.json({ error: "Internal error" }, { status: 500 });
+  }
+}
+
+export async function GET() {
+  try {
+    console.log("Fetching all documents");
+    const res = await fetch("http://backend:5000/upload/documents", {
+      method: "GET",
+    });
+
+    if (!res.ok) {
+      return NextResponse.json({ message: "Fetch failed" }, { status: 500 });
+    }
+
+    const data = await res.json();
+    return NextResponse.json({
+      message: "Documents fetched successfully",
+      data,
+    });
+  } catch (error) {
+    console.error("Error fetching documents:", error);
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

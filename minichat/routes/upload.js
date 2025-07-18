@@ -5,7 +5,7 @@ import path from "path";
 import fs from "fs";
 import crypto from "crypto";
 import db from "../db.js";
-import { extractFactsWithLLM, extractText } from "../utils/chat.js";
+import { factExtractionQueue } from "../utils/queue.js"; // Assuming you have a queue setup for background processing
 
 const router = express.Router();
 
@@ -30,50 +30,46 @@ router.post("/", upload.single("file"), async (req, res) => {
     return res.status(400).json({ error: "No file uploaded" });
   }
 
-  const fileBuffer = fs.readFileSync(req.file.path);
-  const filehash = crypto.createHash("sha256").update(fileBuffer).digest("hex");
-
-  const existing = db
-    .prepare("SELECT id FROM documents WHERE filehash = ?")
-    .get(filehash);
-
-  if (existing) {
-    fs.unlinkSync(req.file.path);
-    return res.status(200).json({ docId: existing.id });
-  }
-
-  const docId = uuidv4();
-  const ext = path.extname(req.file.originalname);
-  const newPath = path.join("uploads", `${docId}${ext}`);
-
-  // Transaction for document and facts
-  const uploadTx = db.transaction(
-    (docId, fileBuffer, filehash, filename, facts) => {
-      db.prepare(
-        "INSERT INTO documents (id, filename, filehash, file) VALUES (?, ?, ?, ?)"
-      ).run(docId, filename, filehash, fileBuffer);
-
-      const insertFact = db.prepare(
-        "INSERT INTO facts (docId, key, value) VALUES (?, ?, ?)"
-      );
-      for (const fact of facts) {
-        insertFact.run(docId, fact.key, fact.value);
-      }
-    }
-  );
-
   try {
+    const fileBuffer = fs.readFileSync(req.file.path);
+    const filehash = crypto
+      .createHash("sha256")
+      .update(fileBuffer)
+      .digest("hex");
+
+    const existing = db
+      .prepare("SELECT id FROM documents WHERE filehash = ?")
+      .get(filehash);
+
+    if (existing) {
+      fs.unlinkSync(req.file.path);
+      return res
+        .status(200)
+        .json({ docId: existing.id, filename: req.file.originalname, status: "existing" });
+    }
+
+    const docId = uuidv4();
+    const ext = path.extname(req.file.originalname);
+    const newPath = path.join("uploads", `${docId}${ext}`);
     fs.renameSync(req.file.path, newPath);
-    const text = await extractText(newPath, req.file.mimetype);
-    const facts = await extractFactsWithLLM(text);
 
-    uploadTx(docId, fileBuffer, filehash, req.file.originalname, facts);
+    // Insert document metadata only (no facts yet)
+    db.prepare(
+      "INSERT INTO documents (id, filename, filehash, file) VALUES (?, ?, ?, ?)"
+    ).run(docId, req.file.originalname, filehash, fileBuffer);
 
-    return res.status(201).json({ docId });
+    // Add job to queue for background processing
+    await factExtractionQueue.add("extractFacts", {
+      docId,
+      filePath: newPath,
+      mimetype: req.file.mimetype,
+      filename: req.file.originalname,
+      filehash,
+    });
+
+    return res.status(201).json({ docId, filename: req.file.originalname, status: "processing" });
   } catch (error) {
-    // Rollback is automatic if an error is thrown inside the transaction
     console.error("Upload error:", error);
-    // Clean up file if it was renamed
     if (fs.existsSync(newPath)) fs.unlinkSync(newPath);
     else if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
     return res.status(500).json({ error: "Internal server error" });
@@ -122,6 +118,22 @@ router.delete("/clear", (req, res) => {
     res.status(200).json({ message: "All documents deleted" });
   } catch (error) {
     console.error("Error clearing documents table:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.get("/status", (req, res) => {
+  const { docId } = req.query;
+  if (!docId) {
+    return res.status(400).json({ error: "Missing docId" });
+  }
+  try {
+    const count = db.prepare("SELECT COUNT(*) as cnt FROM facts WHERE docId = ?").get(docId);
+    // If at least one fact exists, consider it ready
+    console.log(`Checking status for docId ${docId}:`, count.cnt);
+    res.json({ ready: count.cnt > 0 });
+  } catch (error) {
+    console.error("Error checking status:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });

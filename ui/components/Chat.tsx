@@ -1,69 +1,117 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import UploadForm from "./UploadForm";
+import DocumentSelector from "./SelectDocument";
+import { Document } from "../app/models";
 
 export default function ChatBox() {
   const [messages, setMessages] = useState<{ role: string; content: string }[]>(
     []
   );
   const [input, setInput] = useState("");
+  const [doc, setSelectedDoc] = useState<Document | null>();
+  const chatEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (chatEndRef.current) {
+      chatEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages]);
 
   const handleChat = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim()) return;
     setMessages((msgs) => [...msgs, { role: "user", content: input }]);
     setInput("");
-    // TODO: Replace with backend call using docId
+
+    const res = await fetch("api/conversation", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ query: input, docId: doc?.id }),
+    });
+
+    if (!res.ok) {
+      console.error("Error in conversation request:", res.statusText);
+      setMessages((msgs) => [
+        ...msgs,
+        { role: "assistant", content: "Error processing your request." },
+      ]);
+      return;
+    }
+
+    const { data } = await res.json();
+    console.log("answer", data.answer);
+    
     setTimeout(() => {
       setMessages((msgs) => [
         ...msgs,
         {
           role: "assistant",
-          content: "This is a placeholder response referencing facts from doc ",
-          // (docId ?? "N/A"),
+          content: data.answer ?? "No answer found.",
+          docId: doc?.id ?? "N/A",
         },
       ]);
     }, 500);
   };
 
   return (
-    <div className="bg-white rounded-lg shadow p-6 flex flex-col md:w-2/3 w-full">
-      <div className="flex-1 overflow-y-auto mb-4 space-y-2">
-        {messages.map((msg, idx) => (
-          <div
-            key={idx}
-            className={`p-2 rounded ${
-              msg.role === "user"
-                ? "bg-blue-100 text-blue-900 self-end"
-                : "bg-gray-100 text-gray-700 self-start"
-            }`}
-          >
-            <b>{msg.role === "user" ? "You" : "Assistant"}:</b> {msg.content}
-          </div>
-        ))}
-      </div>
-      <form onSubmit={handleChat} className="flex gap-2 text-black">
-        <input
-          type="text"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          className="flex-1 border rounded px-3 py-2"
-          placeholder="Ask about your uploaded document..."
-          //disabled={!docId}
-        />
-        <button
-          type="submit"
-          className="bg-blue-600 text-white px-4 py-2 rounded disabled:opacity-50"
-          //disabled={!docId || !input.trim()}
-        >
-          Send
-        </button>
-      </form>
-      {/* {!docId && (
-        <div className="text-sm text-gray-400 mt-2">
-          Upload a document to start chatting.
+    <div className="h-full flex w-full items-center justify-center p-4 space-x-10">
+      <div className="bg-gray-200 rounded-lg p-6 flex flex-col md:w-2/3 w-full h-full rounded-lg shadow-lg border-2 border-gray-400">
+        {doc?.id && (
+          <>
+            <h3 className="text-gray-700 font-semibold"> {doc?.filename}</h3>
+            <hr className="my-2" />
+          </>
+        )}
+        <div className="flex-1 overflow-y-auto mb-4 space-y-2">
+          {messages.map((msg, idx) => (
+            <div
+              key={idx}
+              className={`p-2 rounded ${
+                msg.role === "user"
+                  ? "bg-blue-100 text-blue-900 self-end"
+                  : "bg-gray-100 text-gray-700 self-start"
+              }`}
+            >
+              <b>{msg.role === "user" ? "You" : "Assistant"}:</b> {msg.content}
+            </div>
+          ))}
+
+          <div ref={chatEndRef} />
         </div>
-      )} */}
+        <form onSubmit={handleChat} className="flex gap-2 text-black">
+          <input
+            type="text"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            className="flex-1 border rounded px-3 py-2"
+            placeholder="Ask about your uploaded document..."
+            disabled={!doc?.id}
+          />
+          <button
+            type="submit"
+            className="bg-blue-600 text-white px-4 py-2 rounded disabled:opacity-50"
+            disabled={!doc?.id || !input.trim()}
+          >
+            Send
+          </button>
+        </form>
+        {!doc?.id && (
+          <div className="text-sm text-gray-400 mt-2">
+            Upload a document to start chatting.
+          </div>
+        )}
+      </div>
+      <aside className="md:w-1/3 w-full flex flex-col space-y-4 h-full justify-between">
+        <DocumentSelector
+          onSelect={setSelectedDoc}
+          selectedId={doc?.id ?? ""}
+        />
+        <UploadForm onUpload={setSelectedDoc} />
+      </aside>
     </div>
   );
 }
