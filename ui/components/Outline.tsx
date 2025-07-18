@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import MarkdownPreview from '@uiw/react-markdown-preview';
 
 interface Props {
   docId?: string;
@@ -41,8 +42,8 @@ const Outline = ({ docId }:Props) => {
         <div className='text-black'>
             {outline && (
                 <div className="bg-gray-100 p-4 rounded-lg shadow-md h-56 overflow-y-auto">
-                <pre className="whitespace-pre-wrap break-words text-sm">{outline}</pre>
-            </div>
+                    <MarkdownPreview source={outline} style={{ background: "whitesmoke", color: "black" }}/>
+                </div>
             )}
             <form onSubmit={(e) => generateOutline(e, docId, topic)} className="mt-4">
                 

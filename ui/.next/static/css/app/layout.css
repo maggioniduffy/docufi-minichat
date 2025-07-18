@@ -354,12 +354,6 @@
   .self-start {
     align-self: flex-start;
   }
-  .overflow-auto {
-    overflow: auto;
-  }
-  .overflow-scroll {
-    overflow: scroll;
-  }
   .overflow-y-auto {
     overflow-y: auto;
   }
@@ -478,14 +472,8 @@
     --tw-font-weight: var(--font-weight-semibold);
     font-weight: var(--font-weight-semibold);
   }
-  .break-words {
-    overflow-wrap: break-word;
-  }
   .break-all {
     word-break: break-all;
-  }
-  .whitespace-pre-wrap {
-    white-space: pre-wrap;
   }
   .text-black {
     color: var(--color-black);
