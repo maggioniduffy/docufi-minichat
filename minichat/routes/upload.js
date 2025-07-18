@@ -14,8 +14,7 @@ router.post("/", upload.single("file"), async (req, res) => {
   }
 
   try {
-
-    const {filehash,fileBuffer} = getHashAndBuffer(req.file.path);
+    const { filehash, fileBuffer } = getHashAndBuffer(req.file.path);
 
     const existing = db
       .prepare("SELECT id FROM documents WHERE filehash = ?")
@@ -23,9 +22,11 @@ router.post("/", upload.single("file"), async (req, res) => {
 
     if (existing) {
       fs.unlinkSync(req.file.path);
-      return res
-        .status(200)
-        .json({ docId: existing.id, filename: req.file.originalname, status: "existing" });
+      return res.status(200).json({
+        docId: existing.id,
+        filename: req.file.originalname,
+        status: "existing",
+      });
     }
 
     const docId = uuidv4();
@@ -45,7 +46,9 @@ router.post("/", upload.single("file"), async (req, res) => {
       filehash,
     });
 
-    return res.status(201).json({ docId, filename: req.file.originalname, status: "processing" });
+    return res
+      .status(201)
+      .json({ docId, filename: req.file.originalname, status: "processing" });
   } catch (error) {
     console.error("Upload error:", error);
     if (fs.existsSync(newPath)) fs.unlinkSync(newPath);
@@ -92,7 +95,18 @@ router.get("/status", (req, res) => {
     return res.status(400).json({ error: "Missing docId" });
   }
   try {
-    const count = db.prepare("SELECT COUNT(*) as cnt FROM facts WHERE docId = ?").get(docId);
+    const firstFact = db
+      .prepare("SELECT * FROM facts WHERE docId = ? ORDER BY id LIMIT 1")
+      .get(docId);
+    if (firstFact && firstFact.key === "error") {
+      return res
+        .status(500)
+        .json({ error: "Couldn't extract facts from this file" });
+    }
+
+    const count = db
+      .prepare("SELECT COUNT(*) as cnt FROM facts WHERE docId = ?")
+      .get(docId);
     console.log(`Checking status for docId ${docId}:`, count.cnt);
     res.json({ ready: count.cnt > 0 });
   } catch (error) {

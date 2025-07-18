@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import UploadForm from "./UploadForm";
 import DocumentSelector from "./SelectDocument";
 import { Document } from "../app/models";
@@ -14,10 +14,12 @@ export default function Chat() {
   const [input, setInput] = useState("");
   const [doc, setSelectedDoc] = useState<Document | null>();
 
-
   const handleChat = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim()) return;
+    if (!input.trim()) {
+      console.log("Input is empty, skipping chat submission.");
+      return;
+    }
     setMessages((msgs) => [...msgs, { role: "user", content: input }]);
     setInput("");
 
@@ -40,7 +42,7 @@ export default function Chat() {
 
     const { data } = await res.json();
     console.log("answer", data.answer);
-    
+
     setTimeout(() => {
       setMessages((msgs) => [
         ...msgs,

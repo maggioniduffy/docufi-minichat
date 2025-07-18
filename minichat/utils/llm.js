@@ -1,20 +1,19 @@
-import { ChatGroq } from "@langchain/groq";
+//import { ChatGroq } from "@langchain/groq";
+import { groq } from "@ai-sdk/groq";
+import { generateText } from "ai";
 import dotenv from "dotenv";
 import { chunkText } from "./text.js"; // Assuming you have a chunking utility
 
 dotenv.config();
 
 export async function extractFactsWithLLM(text) {
-  const model = new ChatGroq({
-    apiKey: process.env.GROQ_API_KEY,
-    model: "llama3-70b-8192",
-    temperature: 0,
-  });
+  // const model = new ChatGroq({
+  //   apiKey: process.env.GROQ_API_KEY,
+  //   model: "llama3-70b-8192",
+  //   temperature: 0,
+  // });
 
-  const prompt = [
-    {
-      role: "system",
-      content: `Extract the most important verbatim financial fact from a text.
+  const prompt = `Extract the most important verbatim financial fact from a text.
 
       Each fact should be returned as a JSON object with:
       - "key": the name of the attribute (e.g., "Operating Income", "Net Revenue")
@@ -24,24 +23,24 @@ export async function extractFactsWithLLM(text) {
       Do NOT guess, calculate, or infer values.
       Omit boilerplate, narrative, and footnotes.
 
-      Return the result as a JSON array: [ { "key": "...", "value": "..." }, ... ]`,
-    },
-    {
-      role: "user",
-      content: `Extract fact from this text:\n\n${text}`,
-    },
-  ];
+      Return the result as a JSON array: [ { "key": "...", "value": "..." }, ... ]
+      
+      Text provided: ${text}`;
 
   try {
-    const response = (await model.invoke(prompt)).content;
-    console.log("LLM response:", response);
-    return response;
+    const result = await generateText({
+      model: groq("gemma2-9b-it"),
+      prompt,
+    });
+    console.log("LLM response:", result.text);
+    console.log("LLM response JSON:", JSON.parse(result.text));
+
+    return result.text; // Assuming the LLM returns a JSON string
   } catch (err) {
     console.error("⚠️ Failed to parse LLM response as JSON:", err);
     return [];
   }
 }
-
 
 export async function extractFactsWithLLMChunked(text) {
   console.log("Chunking text for fact extraction...");
@@ -79,10 +78,10 @@ export async function extractFactsWithLLMChunked(text) {
 }
 
 export async function chatWithContext(userQuery, facts) {
-  const model = new ChatGroq({
-    apiKey: process.env.GROQ_API_KEY,
-    model: "llama3-70b-8192",
-  });
+  // const model = new ChatGroq({
+  //   apiKey: process.env.GROQ_API_KEY,
+  //   model: "llama3-70b-8192",
+  // });
 
   const prompt = `Use these verified facts when relevant:
   ${JSON.stringify(facts, null, 2)}
@@ -98,6 +97,38 @@ export async function chatWithContext(userQuery, facts) {
   Dont tell the source of the facts, just use them to answer the question.
   `;
 
-  const response = await model.invoke(prompt);
-  return response.content;
+  // const response = await model.invoke(prompt);
+  const result = await generateText({
+    model: groq("gemma2-9b-it"),
+    prompt,
+  });
+  return result.text;
+  //return response.content;
+}
+
+export async function getOutline(topic, facts) {
+  // const model = new ChatGroq({
+  //   apiKey: process.env.GROQ_API_KEY,
+  //   model: "llama3-70b-8192",
+  // });
+
+  const prompt = `Use these verified facts when relevant:
+  ${JSON.stringify(facts, null, 2)}
+
+  Based on the facts provided, create a structured outline for a presentation slide on the topic "${topic}".
+  - Use bullet points and subpoints.
+  - Reference these facts if relevant.
+  - Be concise and clear.
+  Output the outline as Markdown with headings and bullet points.
+
+  Dont tell the source of the facts, just use them to answer the question.
+  `;
+
+  // const response = await model.invoke(prompt);
+  const result = await generateText({
+    model: groq("gemma2-9b-it"),
+    prompt,
+  });
+  return result.text;
+  //return response.content;
 }

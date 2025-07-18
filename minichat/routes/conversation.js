@@ -15,6 +15,7 @@ router.post("/", async (req, res) => {
 
   try {
     const facts = db.prepare("SELECT * FROM facts WHERE docId = ?").all(docId);
+    console.log("Retrieved facts for docId:", docId, facts);
     const answer = await chatWithContext(query, facts);
     res.status(200).json({ answer });
   } catch (error) {
