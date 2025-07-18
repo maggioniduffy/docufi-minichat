@@ -8,7 +8,7 @@ const Outline = ({ docId }:Props) => {
     const [outline, setOutline] = useState<string | null>(null);
     const [topic, setTopic] = useState<string>("");
 
-    const generateOutline = async (e: React.FormEvent<HTMLFormElement>, docId: string, topic: string) => {
+    const generateOutline = async (e: any, docId: string, topic: string) => {
         e.preventDefault();
         try {
             const res = await fetch("/api/outline", {
