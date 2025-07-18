@@ -66,6 +66,11 @@
 - Use the chat interface or `POST /conversation` endpoint with a `docId` and a question.
 - The backend answers, referencing extracted facts when relevant.
 
+#### **4. Outline Generation**
+- Select a document and enter a topic (e.g., "Competitive Advantages") in the UI, or use the `POST /outline` endpoint.
+- The backend uses an LLM to generate a structured, hierarchical outline for your topic, referencing extracted facts from the document.
+- The outline is displayed in the UI, ready for use in presentations or reports.
+
 ---
 
 ### **Endpoints**
@@ -77,6 +82,8 @@
 | 3 | **Documents** | `GET /upload/documents` | List all uploaded documents. | **Response:** `{ documents: [...] }` |
 | 4 | **Facts** | `GET /upload/facts/:docId` | Get extracted facts for a document. | **Response:** `{ facts: [...] }` |
 | 5 | **Conversation** | `POST /conversation` | Chat tied to a `docId`. Answers reference extracted facts. | **Request:** `{ "docId": "<uuid>", "query": "string" }` <br> **Response:** `{ "answer": "string" }` |
+| 6 | **Outline** | `POST /outline` | Generate a structured outline for a given topic and document. | **Request:** `{ "docId": "<uuid>", "topic": "string" }` <br> **Response:** `{ "outline": "string" }` |
+
 
 ---
 
