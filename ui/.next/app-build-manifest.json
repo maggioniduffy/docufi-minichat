@@ -1,14 +1,3 @@
 {
-  "pages": {
-    "/api/conversation/route": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/api/conversation/route.js"
-    ],
-    "/api/outline/route": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/api/outline/route.js"
-    ]
-  }
+  "pages": {}
 }

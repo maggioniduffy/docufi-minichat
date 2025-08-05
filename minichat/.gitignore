@@ -4,3 +4,4 @@ uploads
 # In .gitignore
 db/*.sqlite
 .env
+tests/*.txt

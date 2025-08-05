@@ -1,15 +1,14 @@
 import request from "supertest";
 import fs from "fs";
 import path from "path";
-import app from "../server.js"; // Make sure your Express app is exported here
-
+import app from "../server.js";
+import db from "../db.js";
+import { factExtractionQueue } from "../utils/queue.js";
 import { fileURLToPath } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-import { v4 as uuidv4 } from "uuid";
-import db from "../db.js"; // Adjust the import path as necessary
-import { upload, getHashAndBuffer } from "../utils/files.js"; // Adjust the import path as necessary
+
 describe("Docufi Mini-Chat API", () => {
   let docId;
   let filename = "testfile.txt";
@@ -17,23 +16,27 @@ describe("Docufi Mini-Chat API", () => {
 
   beforeAll(() => {
     // Create a small test file
-    fs.writeFileSync(testFilePath, "Revenue: $1000\nEBITDA: $500\nYoY growth: 10%");
+    fs.writeFileSync(
+      testFilePath,
+      "Revenue: $1000\nEBITDA: $500\nYoY growth: 10%"
+    );
   });
 
-  afterAll(() => {
+  afterAll(async () => {
     if (fs.existsSync(testFilePath)) fs.unlinkSync(testFilePath);
+    await factExtractionQueue.close();
+    // Example for DB
+    await db.close();
   });
 
   it("should reject upload with no file", async () => {
     const res = await request(app).post("/upload");
     expect(res.statusCode).toBe(400);
-    expect(res.body.error).toMatch(/no file/i);
+    expect(res.body.error).toMatch(/No file uploaded/i);
   });
 
   it("should upload a file and return docId", async () => {
-    const res = await request(app)
-      .post("/upload")
-      .attach("file", testFilePath);
+    const res = await request(app).post("/upload").attach("file", testFilePath);
     expect(res.statusCode).toBe(201);
     expect(res.body.docId).toBeDefined();
     expect(res.body.filename).toBe(filename);
@@ -50,7 +53,7 @@ describe("Docufi Mini-Chat API", () => {
     const res = await request(app).get("/upload/documents");
     expect(res.statusCode).toBe(200);
     expect(Array.isArray(res.body.documents)).toBe(true);
-    expect(res.body.documents.some(d => d.id === docId)).toBe(true);
+    expect(res.body.documents.some((d) => d.id === docId)).toBe(true);
   });
 
   it("should return facts for a document (may be empty if worker not run)", async () => {
