@@ -3,3 +3,12 @@ minichat/node_modules
 ui/node_modules
 files/*
 ui/.next
+.next
+dist
+.env
+.env.local
+.env.development
+.env.production
+.env.test
+*.log
+*.lock

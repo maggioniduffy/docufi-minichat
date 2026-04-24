@@ -20,10 +20,8 @@ services:
     build: ./ui
     ports:
       - "3000:3000" # Next.js on 3000
-    volumes:
-      - ./ui:/app
     environment:
-      - NODE_ENV=development
+      - NODE_ENV=production
     depends_on:
       - backend
     restart: unless-stopped
@@ -40,6 +38,8 @@ services:
     volumes:
       - ./minichat/uploads:/app/uploads
       - ./db:/app/db
+    env_file:
+      - ./minichat/.env
     depends_on:
       - redis
     environment:

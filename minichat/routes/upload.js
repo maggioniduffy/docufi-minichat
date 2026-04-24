@@ -59,8 +59,7 @@ router.post("/", upload.single("file"), async (req, res) => {
 
 router.get("/documents", (req, res) => {
   try {
-    const documents = db.prepare("SELECT * FROM documents").all();
-    console.log("Documents:", documents);
+    const documents = db.prepare("SELECT id, filename, uploaded_at FROM documents").all();
     res.status(200).json({ documents });
   } catch (error) {
     console.error("Error fetching documents:", error);

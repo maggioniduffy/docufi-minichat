@@ -29,7 +29,7 @@ export async function extractFactsWithLLM(text) {
 
   try {
     const result = await generateText({
-      model: groq("gemma2-9b-it"),
+      model: groq("llama-3.3-70b-versatile"),
       prompt,
     });
     console.log("LLM response:", result.text);
@@ -99,7 +99,7 @@ export async function chatWithContext(userQuery, facts) {
 
   // const response = await model.invoke(prompt);
   const result = await generateText({
-    model: groq("gemma2-9b-it"),
+    model: groq("llama-3.3-70b-versatile"),
     prompt,
   });
   return result.text;
@@ -126,7 +126,7 @@ export async function getOutline(topic, facts) {
 
   // const response = await model.invoke(prompt);
   const result = await generateText({
-    model: groq("gemma2-9b-it"),
+    model: groq("llama-3.3-70b-versatile"),
     prompt,
   });
   return result.text;

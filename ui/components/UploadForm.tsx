@@ -9,164 +9,135 @@ interface Props {
 
 export default function UploadForm({ onUpload }: Props) {
   const [file, setFile] = useState<File | null>(null);
-  const [docId, setDocId] = useState<string | null>(null);
-  const [filename, setFilename] = useState<string | null>(null);
-
   const [loading, setLoading] = useState(false);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
+  const [existsMsg, setExistsMsg] = useState<string | null>(null);
   const [processingDocs, setProcessingDocs] = useState<{ [docId: string]: boolean }>({});
   const [readyDocs, setReadyDocs] = useState<{ [docId: string]: boolean }>({});
   const [docFilenames, setDocFilenames] = useState<{ [docId: string]: string }>({});
 
-  const [existsMsg, setExistsMsg] = useState<string | null>(null);
-
-const pollStatus = (docId: string) => {
-  console.log("POLL");
-  setProcessingDocs((prev) => ({ ...prev, [docId]: true }));
-  setReadyDocs((prev) => ({ ...prev, [docId]: false }));
-
-  const interval = setInterval(async () => {
-    try {
-      console.log("Polling status for docId:", docId);
-      const res = await fetch(`/api/upload/status?docId=${docId}`);
-      const data = await res.json();
-      console.log("Polling response:", data);
-      if (data.ready) {
+  const pollStatus = (docId: string) => {
+    setProcessingDocs((prev) => ({ ...prev, [docId]: true }));
+    setReadyDocs((prev) => ({ ...prev, [docId]: false }));
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/upload/status?docId=${docId}`);
+        const data = await res.json();
+        if (data.ready) {
+          setProcessingDocs((prev) => ({ ...prev, [docId]: false }));
+          setReadyDocs((prev) => ({ ...prev, [docId]: true }));
+          clearInterval(interval);
+          onUpload({ id: docId, filename: docFilenames[docId] || "Unknown" });
+        }
+      } catch {
         setProcessingDocs((prev) => ({ ...prev, [docId]: false }));
-        setReadyDocs((prev) => ({ ...prev, [docId]: true }));
-        clearInterval(interval); // <-- Add this line
-        onUpload({ id: docId, filename: docFilenames[docId] || "Unknown" });
       }
-    } catch (err) {
-      console.error("Error polling status:", err);
-      setProcessingDocs((prev) => ({ ...prev, [docId]: false }));
-      setReadyDocs((prev) => ({ ...prev, [docId]: false }));
-      // clearInterval(interval);
-    }
-  }, 10000);
-};
+    }, 10000);
+  };
 
   useEffect(() => {
-    if (error) {
-      const timer = setTimeout(() => setError(null), 10000);
-      return () => clearTimeout(timer);
-    }
+    if (!error) return;
+    const t = setTimeout(() => setError(null), 6000);
+    return () => clearTimeout(t);
   }, [error]);
 
-  const handleFile = (f: File | undefined) => {
-    if (!f) return;
-    setFile(f);
-  };
+  useEffect(() => {
+    if (!existsMsg) return;
+    const t = setTimeout(() => setExistsMsg(null), 6000);
+    return () => clearTimeout(t);
+  }, [existsMsg]);
+
+  const handleFile = (f: File | undefined) => { if (f) setFile(f); };
 
   const removeFile = () => {
     setFile(null);
-    setDocId(null);
     setLoading(false);
-    if (inputRef.current) {
-      inputRef.current.value = "";
-    }
+    if (inputRef.current) inputRef.current.value = "";
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  setError(null);
-  if (!file) return;
-  const formData = new FormData();
-  formData.append("file", file);
-  setLoading(true);
+    e.preventDefault();
+    setError(null);
+    if (!file) return;
+    const formData = new FormData();
+    formData.append("file", file);
+    setLoading(true);
+    try {
+      const res = await fetch("api/upload", { method: "POST", body: formData });
+      if (!res.ok) throw new Error("Upload failed");
+      const { data } = await res.json();
 
-  try {
-    const res = await fetch("api/upload", {
-      method: "POST",
-      body: formData,
-    });
-    if (!res.ok) throw new Error("Upload failed");
-    const {data} = await res.json();
-    
-    if (data.status === "existing") {
-      setExistsMsg(`File "${data.filename}" already exists.`);
+      if (data.status === "existing") {
+        setExistsMsg(`"${data.filename}" is already uploaded.`);
+        setFile(null);
+        if (inputRef.current) inputRef.current.value = "";
+        setLoading(false);
+        return;
+      }
+
+      setDocFilenames((prev) => ({ ...prev, [data.docId]: data.filename }));
+      pollStatus(data.docId);
       setFile(null);
       if (inputRef.current) inputRef.current.value = "";
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
       setLoading(false);
-      return;
     }
-
-    console.log("Upload response:", data);
-    console.log("Upload response:", JSON.stringify(data, null, 2));
-    setDocId(data.docId);
-    setFilename(data.filename);
-    setDocFilenames((prev) => ({ ...prev, [data.docId]: data.filename })); // <-- add this
-    console.log("Document uploaded:", data.docId, data.filename);
-    pollStatus(data.docId);
-    setFile(null);
-    if (inputRef.current) {
-      inputRef.current.value = "";
-    }
-    setError(null);
-  } catch (err) {
-    setError("Upload error: " + (err as Error).message);
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   const clear = async () => {
     try {
-      const res = await fetch("api/upload", {
-        method: "DELETE",
-      });
+      const res = await fetch("api/upload", { method: "DELETE" });
       if (!res.ok) throw new Error("Clear failed");
-      const data = await res.json();
-      setDocId(null);
       setFile(null);
       setError(null);
-      // Show success message after clear
-      setTimeout(() => {
-        setError("✅ Cleared all uploaded documents.");
-      }, 100);
+      setProcessingDocs({});
+      setReadyDocs({});
+      setDocFilenames({});
     } catch (err) {
-      setError("Clear error: " + (err as Error).message);
-      console.log(
-        "Clear error: " +
-          (err as Error).message +
-          (err as Error).stack +
-          (err as Error).name
-      );
+      setError((err as Error).message);
     }
   };
+
+  const processingEntries = Object.entries(processingDocs).filter(([, v]) => v);
+  const readyEntries = Object.entries(readyDocs).filter(([, v]) => v);
+
   return (
-    <div className="p-4 bg-gray-50 rounded-lg shadow-md space-y-4 flex flex-col items-center">
-      <form onSubmit={handleSubmit} className="space-y-4 max-w-mdd">
-        {/* Dropzone */}
+    <div
+      className="rounded-2xl p-4 flex flex-col gap-3"
+      style={{
+        background: "rgba(255,255,255,0.04)",
+        backdropFilter: "blur(24px)",
+        WebkitBackdropFilter: "blur(24px)",
+        border: "1px solid rgba(255,255,255,0.08)",
+      }}
+    >
+      <p className="text-white/50 text-[11px] font-medium uppercase tracking-wider">Upload Document</p>
+
+      <form onSubmit={handleSubmit} className="flex flex-col gap-2.5">
         <div
-          className={`w-full border-2 border-dashed rounded-xl p-6 text-center transition-colors duration-200 ${
-            isDragging
-              ? "bg-blue-100 border-blue-500"
-              : "bg-white border-gray-300"
-          }`}
-          onDragOver={(e) => {
-            e.preventDefault();
-            setIsDragging(true);
+          className="rounded-xl p-5 text-center cursor-pointer transition-all"
+          style={{
+            border: `1.5px dashed ${isDragging ? "rgba(124,58,237,0.6)" : "rgba(255,255,255,0.1)"}`,
+            background: isDragging ? "rgba(124,58,237,0.07)" : "rgba(255,255,255,0.02)",
           }}
+          onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
           onDragLeave={() => setIsDragging(false)}
-          onDrop={(e) => {
-            e.preventDefault();
-            setIsDragging(false);
-            const droppedFile = e.dataTransfer.files?.[0];
-            if (droppedFile) handleFile(droppedFile);
-          }}
+          onDrop={(e) => { e.preventDefault(); setIsDragging(false); handleFile(e.dataTransfer.files?.[0]); }}
           onClick={() => inputRef.current?.click()}
         >
-          <p className="text-gray-700 font-semibold mb-1">
-            Click or drop a file here
-          </p>
-          <p className="text-sm text-gray-500">PDF, DOCX, or TXT</p>
+          <svg className="mx-auto mb-2 opacity-35" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="17 8 12 3 7 8"/>
+            <line x1="12" y1="3" x2="12" y2="15"/>
+          </svg>
+          <p className="text-white/45 text-xs">Click or drop a file</p>
+          <p className="text-white/22 text-[11px] mt-0.5">PDF · DOCX · TXT</p>
         </div>
 
-        {/* Hidden input */}
         <input
           type="file"
           accept=".pdf,.docx,.txt"
@@ -175,60 +146,60 @@ const pollStatus = (docId: string) => {
           className="hidden"
         />
 
-        <div className="flex justify-between items-center">
-          {" "}
-          {file && <div className="text-sm text-gray-600">📄 {file.name}</div>}
-          {file && (
-            <button
-              type="button"
-              onClick={removeFile}
-              className="bg-red-600 hover:bg-red-700 font-semibold text-sm rounded-full px-2 py-1 text-white transition-colors"
-            >
-              {" "}
-              X{" "}
-            </button>
-          )}
-        </div>
-
-        {error && (
-          <div className="text-gray-600 font-semibold mt-2">{error}</div>
+        {file && (
+          <div
+            className="flex items-center gap-2 px-3 py-2 rounded-lg"
+            style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)" }}
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.5)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+            </svg>
+            <span className="text-white/60 text-xs flex-1 truncate">{file.name}</span>
+            <button type="button" onClick={removeFile} className="text-white/25 hover:text-white/60 transition-colors text-xs leading-none">✕</button>
+          </div>
         )}
 
-        {existsMsg && (
-          <div className="text-yellow-700 font-semibold mt-2">{existsMsg}</div>
-        )}
+        {error && <p className="text-rose-400 text-xs px-1">{error}</p>}
+        {existsMsg && <p className="text-amber-400 text-xs px-1">{existsMsg}</p>}
 
         <button
           type="submit"
           disabled={!file || loading}
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-md cursor-pointer transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full py-2.5 rounded-xl text-xs font-medium text-white transition-opacity disabled:opacity-30"
+          style={{ background: "linear-gradient(135deg, #7c3aed, #6d28d9)" }}
         >
-          {loading ? "Uploading..." : "Upload"}
+          {loading ? "Uploading…" : "Upload"}
         </button>
-
-        {filename && (
-          <p className="text-yellow-600 font-mono break-all">
-            ✅ Uploaded! Filename: {filename} is in process
-          </p>
-        )}
-
-        <div className="mt-4 w-full">
-          {Object.keys(readyDocs).map((docId) =>
-            readyDocs[docId] ? (
-              <p key={docId} className="text-green-600 font-mono break-all">
-                ✅ Document ready: {docFilenames[docId] || docId}
-              </p>
-            ) : null
-          )}
-        </div>
       </form>
+
+      {processingEntries.map(([id]) => (
+        <div
+          key={id}
+          className="flex items-center gap-2 px-3 py-2 rounded-lg"
+          style={{ background: "rgba(251,191,36,0.07)", border: "1px solid rgba(251,191,36,0.15)" }}
+        >
+          <div className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse shrink-0" />
+          <span className="text-amber-300/80 text-xs truncate">Extracting · {docFilenames[id] || id}</span>
+        </div>
+      ))}
+
+      {readyEntries.map(([id]) => (
+        <div
+          key={id}
+          className="flex items-center gap-2 px-3 py-2 rounded-lg"
+          style={{ background: "rgba(52,211,153,0.07)", border: "1px solid rgba(52,211,153,0.15)" }}
+        >
+          <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
+          <span className="text-emerald-300/80 text-xs truncate">Ready · {docFilenames[id] || id}</span>
+        </div>
+      ))}
 
       <button
         onClick={clear}
-        className="text-black bg-red-400 hover:bg-red-500 font-semibold py-2 px-4 rounded-md transition-colors"
+        className="text-[11px] text-white/20 hover:text-rose-400 transition-colors text-center py-0.5"
       >
-        {" "}
-        Clear entire table{" "}
+        Clear all documents
       </button>
     </div>
   );
